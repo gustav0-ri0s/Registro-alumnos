@@ -18,6 +18,3 @@ View your app in AI Studio: https://ai.studio/apps/drive/1p_dkN4_HG5Y8ZuPrL8V6ch
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
-
-## Deploy Vercel
-Go into the development deploy to test and use it: [Here](https://registro-alumnos-silk.vercel.app/)

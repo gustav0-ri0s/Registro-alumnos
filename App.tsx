@@ -29,6 +29,12 @@ const App: React.FC = () => {
     { id: 1, name: '', time: null },
   ]);
   const [nextId, setNextId] = useState<number>(2);
+  const [grade, setGrade] = useState<string>('');
+  const [examNumber, setExamNumber] = useState<string>('1er Examen');
+
+  const examOptions = [
+    '1er Examen', '2do Examen', '3er Examen', '4to Examen', '5to Examen', '6to Examen', '7mo Examen'
+  ];
 
   const handleAddRow = useCallback(() => {
     setStudents((prevStudents) => [
@@ -66,8 +72,8 @@ const App: React.FC = () => {
 
     doc.setFontSize(12);
     doc.setTextColor(100);
-    doc.text("Registro de Entrega - 4to Examen TIPO ADMISION 2025", doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
-    doc.text("Primer Año de Secundaria", doc.internal.pageSize.getWidth() / 2, 36, { align: 'center' });
+    doc.text(`Registro de Entrega - ${examNumber}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+    doc.text(grade, doc.internal.pageSize.getWidth() / 2, 36, { align: 'center' });
 
 
     const tableData = students
@@ -93,8 +99,13 @@ const App: React.FC = () => {
       }
     });
 
-    doc.save('registro_examen_admision_2025.pdf');
-  }, [students]);
+    const sanitizedGrade = grade.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const sanitizedExam = examNumber.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`registro_${sanitizedGrade}_${sanitizedExam}.pdf`);
+  }, [students, grade, examNumber]);
+
+  const isConfigured = grade.trim() !== '' && examNumber.trim() !== '';
+  const hasRegistrations = students.some(s => s.time);
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -104,58 +115,91 @@ const App: React.FC = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
               INSTITUCION EDUCATIVA VALORES Y CIENCIAS
             </h1>
-            <p className="text-md md:text-lg text-gray-600 mt-2">
-              4to Examen TIPO ADMISION 2025 - Primer Año de Secundaria
+            <p className="text-md md:text-lg text-gray-600 mt-2 h-6">
+              {isConfigured ? `${examNumber} - ${grade}` : 'Configure el Grado y Número de Examen'}
             </p>
           </header>
           
           <main>
-            <div className="space-y-3">
-              {/* Table Header */}
-              <div className="hidden md:grid grid-cols-12 gap-4 items-center px-4 py-2 font-semibold text-left text-gray-700 bg-gray-200 rounded-lg">
-                  <div className="col-span-1">#</div>
-                  <div className="col-span-6">Nombre Completo</div>
-                  <div className="col-span-5">Registrar Hora</div>
+            <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Configuración del Registro</h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                      <label htmlFor="grade" className="block text-sm font-medium text-gray-700 mb-1">Grado y Sección</label>
+                      <input
+                          type="text"
+                          id="grade"
+                          value={grade}
+                          onChange={(e) => setGrade(e.target.value)}
+                          placeholder="Ej: Primer Año de Secundaria 'A'"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#378FAE] transition"
+                      />
+                  </div>
+                  <div>
+                      <label htmlFor="examNumber" className="block text-sm font-medium text-gray-700 mb-1">Número de Examen</label>
+                      <select
+                          id="examNumber"
+                          value={examNumber}
+                          onChange={(e) => setExamNumber(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#378FAE] transition bg-gray-800 text-white"
+                      >
+                          {examOptions.map(option => (
+                              <option className="bg-gray-800 text-white" key={option} value={option}>{option}</option>
+                          ))}
+                      </select>
+                  </div>
               </div>
-
-              {/* Student Rows */}
-              {students.map((student, index) => (
-                <div key={student.id} className="grid grid-cols-12 gap-4 items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <div className="col-span-1 text-gray-600 font-semibold">{index + 1}</div>
-                    <div className="col-span-11 md:col-span-6">
-                        <input
-                            type="text"
-                            placeholder="Ingrese nombre completo del alumno"
-                            value={student.name}
-                            onChange={(e) => handleNameChange(student.id, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#378FAE] transition"
-                            disabled={!!student.time}
-                        />
-                    </div>
-                    <div className="col-span-11 col-start-2 md:col-start-auto md:col-span-5">
-                        {student.time ? (
-                            <div className="flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-800 rounded-md font-mono text-center">
-                                {student.time}
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => handleRegisterTime(student.id)}
-                                disabled={!student.name.trim()}
-                                className="w-full flex items-center justify-center bg-[#378FAE] text-white font-bold py-2 px-4 rounded-md hover:bg-[#2c7ca8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#378FAE] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300"
-                            >
-                                <ClockIcon />
-                                Registrar Hora
-                            </button>
-                        )}
-                    </div>
-                </div>
-              ))}
             </div>
+
+            <fieldset disabled={!isConfigured} className="disabled:opacity-50 transition-opacity">
+              <div className="space-y-3">
+                {/* Table Header */}
+                <div className="hidden md:grid grid-cols-12 gap-4 items-center px-4 py-2 font-semibold text-left text-gray-700 bg-gray-200 rounded-lg">
+                    <div className="col-span-1">#</div>
+                    <div className="col-span-6">Nombre Completo</div>
+                    <div className="col-span-5">Registrar Hora</div>
+                </div>
+
+                {/* Student Rows */}
+                {students.map((student, index) => (
+                  <div key={student.id} className="grid grid-cols-12 gap-4 items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <div className="col-span-1 text-gray-600 font-semibold">{index + 1}</div>
+                      <div className="col-span-11 md:col-span-6">
+                          <input
+                              type="text"
+                              placeholder="Ingrese nombre completo del alumno"
+                              value={student.name}
+                              onChange={(e) => handleNameChange(student.id, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#378FAE] transition"
+                              disabled={!!student.time}
+                          />
+                      </div>
+                      <div className="col-span-11 col-start-2 md:col-start-auto md:col-span-5">
+                          {student.time ? (
+                              <div className="flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-800 rounded-md font-mono text-center">
+                                  {student.time}
+                              </div>
+                          ) : (
+                              <button
+                                  onClick={() => handleRegisterTime(student.id)}
+                                  disabled={!student.name.trim()}
+                                  className="w-full flex items-center justify-center bg-[#378FAE] text-white font-bold py-2 px-4 rounded-md hover:bg-[#2c7ca8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#378FAE] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300"
+                              >
+                                  <ClockIcon />
+                                  Registrar Hora
+                              </button>
+                          )}
+                      </div>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
 
             <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
               <button
                 onClick={handleAddRow}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 border-2 border-dashed border-gray-400 text-gray-600 rounded-lg hover:bg-gray-200 hover:border-gray-500 transition-colors"
+                disabled={!isConfigured}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 border-2 border-dashed border-gray-400 text-gray-600 rounded-lg hover:bg-gray-200 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <PlusIcon />
                 Agregar Fila
@@ -163,7 +207,8 @@ const App: React.FC = () => {
               
               <button
                 onClick={handleExportPdf}
-                className="w-full sm:w-auto flex items-center justify-center bg-gray-800 text-white font-bold py-2 px-6 rounded-lg hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 transition-colors"
+                disabled={!isConfigured || !hasRegistrations}
+                className="w-full sm:w-auto flex items-center justify-center bg-gray-800 text-white font-bold py-2 px-6 rounded-lg hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 <DownloadIcon />
                 Generar PDF
