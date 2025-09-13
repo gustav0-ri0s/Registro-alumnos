@@ -1,0 +1,5 @@
+{
+  "name": "Student Exam Sign-in",
+  "description": "An application to register students as they submit their exams. It records their full name and the exact time of submission, and allows for exporting the list to a PDF.",
+  "requestFramePermissions": []
+}
