@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Student } from './types';
 
 // Because jsPDF and autoTable are loaded from a CDN, we need to tell TypeScript about them.
@@ -23,14 +23,47 @@ const DownloadIcon = () => (
     </svg>
 );
 
+const TrashIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
 
 const App: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([
-    { id: 1, name: '', time: null },
-  ]);
-  const [nextId, setNextId] = useState<number>(2);
-  const [grade, setGrade] = useState<string>('');
-  const [examNumber, setExamNumber] = useState<string>('1er Examen');
+  // Function to load initial state from localStorage
+  const loadInitialState = () => {
+    try {
+      const savedState = localStorage.getItem('examRegistrationData');
+      if (savedState) {
+        return JSON.parse(savedState);
+      }
+    } catch (error) {
+      console.error("Error loading state from localStorage:", error);
+    }
+    // Return default state if nothing is saved or an error occurs
+    return {
+      students: [{ id: 1, name: '', time: null }],
+      nextId: 2,
+      grade: '',
+      examNumber: '1er Examen'
+    };
+  };
+  
+  const [students, setStudents] = useState<Student[]>(() => loadInitialState().students);
+  const [nextId, setNextId] = useState<number>(() => loadInitialState().nextId);
+  const [grade, setGrade] = useState<string>(() => loadInitialState().grade);
+  const [examNumber, setExamNumber] = useState<string>(() => loadInitialState().examNumber);
+
+  // Effect to save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const stateToSave = JSON.stringify({ students, nextId, grade, examNumber });
+      localStorage.setItem('examRegistrationData', stateToSave);
+    } catch (error) {
+      console.error("Error saving state to localStorage:", error);
+    }
+  }, [students, nextId, grade, examNumber]);
+
 
   const examOptions = [
     '1er Examen', '2do Examen', '3er Examen', '4to Examen', '5to Examen', '6to Examen', '7mo Examen'
@@ -103,6 +136,13 @@ const App: React.FC = () => {
     const sanitizedExam = examNumber.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     doc.save(`registro_${sanitizedGrade}_${sanitizedExam}.pdf`);
   }, [students, grade, examNumber]);
+  
+  const handleClearData = useCallback(() => {
+    if (window.confirm('¿Estás seguro de que quieres borrar todos los datos del registro? Esta acción no se puede deshacer.')) {
+      localStorage.removeItem('examRegistrationData');
+      window.location.reload(); // Reload the page to reset the state to default
+    }
+  }, []);
 
   const isConfigured = grade.trim() !== '' && examNumber.trim() !== '';
   const hasRegistrations = students.some(s => s.time);
@@ -196,14 +236,23 @@ const App: React.FC = () => {
             </fieldset>
 
             <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <button
-                onClick={handleAddRow}
-                disabled={!isConfigured}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 border-2 border-dashed border-gray-400 text-gray-600 rounded-lg hover:bg-gray-200 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <PlusIcon />
-                Agregar Fila
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <button
+                  onClick={handleAddRow}
+                  disabled={!isConfigured}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 border-2 border-dashed border-gray-400 text-gray-600 rounded-lg hover:bg-gray-200 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <PlusIcon />
+                  Agregar Fila
+                </button>
+                <button
+                  onClick={handleClearData}
+                  className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600 transition-colors"
+                >
+                  <TrashIcon />
+                  Limpiar Registro
+                </button>
+              </div>
               
               <button
                 onClick={handleExportPdf}
